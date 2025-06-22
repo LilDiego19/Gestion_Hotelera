@@ -745,7 +745,7 @@ class Roombooking:
             precio_habitacion = precios_habitacion.get(tipo_habitacion, 0)
             precio_comida = precios_comida.get(comida, 0)
 
-            subtotal = (precio_habitacion * dias) + (precio_comida * personas * dias)
+            subtotal = (precio_habitacion * dias) + (precios_comida * personas * dias)
 
             impuesto = subtotal * 0.10
             total = subtotal + impuesto
