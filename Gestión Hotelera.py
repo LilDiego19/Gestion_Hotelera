@@ -61,7 +61,7 @@ class HotelManagementSystem:
         self.right_frame.place(x=225, y=0, width=1310, height=590)
 
         # Logos inferiores
-        img_logo = Image.open(r"/Users/danielgallegolazaro/Downloads/Logo.png")
+        img_logo = Image.open(ruta_logo)
         for y in [225, 420]:
             img = img_logo.resize((230, 210 if y == 225 else 190), Image.Resampling.LANCZOS)
             photo = ImageTk.PhotoImage(img)

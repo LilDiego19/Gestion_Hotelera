@@ -685,7 +685,8 @@ class Roombooking:
                     bg=color,
                     width=10,
                     height=3,
-                    command=lambda t=habitacion_id: self.datos["Habitación"].set(t)
+                    command=lambda t=habitacion_id: self.datos["Habitación"].set(t),
+                    state=NORMAL if disponible else DISABLED
                 )
                 btn.grid(row=planta * 5 + (i // 5) + 1, column=i % 5 + 1, padx=5, pady=5)
 
