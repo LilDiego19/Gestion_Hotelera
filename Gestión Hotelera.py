@@ -657,7 +657,7 @@ class Roombooking:
     def mostrar_plano_habitaciones(self):
         ventana = Toplevel(self.root)
         ventana.title("Plano de Habitaciones")
-        ventana.geometry("700x400")
+        ventana.geometry("750x500")  # un poco más grande
 
         try:
             entrada = self.datos["Fecha de Entrada"].get_date().strftime("%Y-%m-%d")
@@ -667,27 +667,53 @@ class Roombooking:
             ventana.destroy()
             return
 
+        # Canvas + Scrollbar
+        frame_canvas = Frame(ventana)
+        frame_canvas.pack(fill=BOTH, expand=1)
+
+        canvas = Canvas(frame_canvas, bg="white")
+        canvas.pack(side=LEFT, fill=BOTH, expand=1)
+
+        scrollbar = Scrollbar(frame_canvas, orient=VERTICAL, command=canvas.yview)
+        scrollbar.pack(side=RIGHT, fill=Y)
+
+        canvas.configure(yscrollcommand=scrollbar.set)
+        canvas.bind('<Configure>', lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+
+        # Frame para el contenido, dentro del canvas
+        contenido = Frame(canvas, bg="white")
+        canvas.create_window((0, 0), window=contenido, anchor="nw")
+
+        # Ahora añade las habitaciones como antes, pero en el Frame contenido
         for planta in range(3):  # Planta 1 = 100, Planta 2 = 200, etc.
-            Label(ventana, text=f"Planta {planta + 1}", font=("arial", 11, "bold")).grid(row=planta * 5, column=0,
-                                                                                         pady=5)
-
+            Label(contenido, text=f"Planta {planta + 1}", font=("arial", 11, "bold"), bg="white").grid(row=planta * 5,
+                                                                                                       column=0, pady=5)
             for i in range(10):  # Habitaciones por planta
-                numero = (planta + 1) * 100 + i + 1  # 101, 102, ..., 110, 201, ...
-                tipo = self.obtener_tipo_habitacion(i + 1)  # 1-5 estándar, etc.
-
+                numero = (planta + 1) * 100 + i + 1
+                tipo = self.obtener_tipo_habitacion(i + 1)
                 habitacion_id = f"{numero} {tipo}"
                 disponible = self.habitacion_disponible(habitacion_id, entrada, salida)
                 color = "green" if disponible else "red"
 
                 btn = Button(
-                    ventana,
+                    contenido,
                     text=habitacion_id,
                     bg=color,
                     width=10,
                     height=3,
-                    command=lambda t=habitacion_id: self.datos["Habitación"].set(t)
+                    command=lambda t=habitacion_id: self.datos["Habitación"].set(t),
+                    state=NORMAL if disponible else DISABLED
                 )
+                # Ajusta la posición de la cuadrícula según tus necesidades
                 btn.grid(row=planta * 5 + (i // 5) + 1, column=i % 5 + 1, padx=5, pady=5)
+
+        # Si tienes muchas plantas, puedes ajustar el número de filas
+
+        # Para que el canvas coja el foco y funcione el scroll con la rueda del ratón:
+        def _on_mousewheel(event):
+            canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+        canvas.bind_all("<MouseWheel>", _on_mousewheel)
 
     def obtener_tipo_habitacion(self, numero):
         # 5 estándar (1-5), 4 familiar (6-9), 1 suite (10) por planta
