@@ -100,7 +100,7 @@ class Cust_Win:
 
         labelframeleft = LabelFrame(self.root, bd=2, relief=RIDGE, text="Datos del Cliente",
                                     font=("Arial", 12, "bold"), padx=2)
-        labelframeleft.place(x=5, y=60, width=580, height=500)
+        labelframeleft.place(x=5, y=60, width=550, height=500)
 
         fields = [
             ("Ref cliente", ttk.Entry),
@@ -140,7 +140,7 @@ class Cust_Win:
     def crear_interfaz_tabla(self):
         Table_Frame = LabelFrame(self.root, bd=2, relief=RIDGE, text="Ver detalles y sistema de búsqueda",
                                  font=("arial", 12, "bold"))
-        Table_Frame.place(x=600, y=60, width=680, height=500)
+        Table_Frame.place(x=580, y=60, width=700, height=500)
 
         lblSearchBy = Label(Table_Frame, font=("arial", 12, "bold"), text="Buscar por:", bg="red", fg="white")
         lblSearchBy.grid(row=0, column=0, sticky=W, padx=2)
@@ -235,9 +235,9 @@ class Cust_Win:
         self.cursor = self.conn.cursor()
 
     def crear_tabla(self):
-        self.cursor.execute("DROP TABLE IF EXISTS clientes")  # 💥 Fuerza eliminar tabla antigua
+        # self.cursor.execute("DROP TABLE IF EXISTS clientes")  #  Fuerza eliminar tabla antigua
         self.cursor.execute("""
-            CREATE TABLE clientes (
+            CREATE TABLE IF NOT EXISTS clientes (
                 ref TEXT PRIMARY KEY,
                 nombre TEXT,
                 genero TEXT,
