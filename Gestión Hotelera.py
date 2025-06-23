@@ -343,7 +343,7 @@ class Roombooking:
 
         labelframeleft = LabelFrame(self.root, bd=2, relief=RIDGE, text="Datos de la Reserva",
                                     font=("arial", 12, "bold"), padx=2)
-        labelframeleft.place(x=5, y=50, width=425, height=520)
+        labelframeleft.place(x=5, y=50, width=480, height=520)
 
         # Campos
         self.datos = {}
@@ -393,8 +393,8 @@ class Roombooking:
         self.datos["Nº de Personas"].bind("<FocusOut>", lambda e: self.calcular_precio_total())
 
         # Botón buscar
-        Button(labelframeleft, text="Buscar Datos", font=("arial", 10, "bold"), bg="black", fg="gold", width=12,
-               command=self.buscar_datos_cliente).grid(row=0, column=2, padx=5)
+        Button(labelframeleft, text="Buscar", font=("arial", 10, "bold"), bg="black", fg="gold", width=8,
+               command=self.buscar_datos_cliente).grid(row=0, column=2, padx=0)
 
         # Botones CRUD
         botones = [
@@ -409,7 +409,7 @@ class Roombooking:
 
         # Tabla a la derecha
         frame_tabla = Frame(self.root, bd=2, relief=RIDGE)
-        frame_tabla.place(x=440, y=150, width=830, height=405)
+        frame_tabla.place(x=500, y=150, width=750, height=405)
 
         scroll_x = Scrollbar(frame_tabla, orient=HORIZONTAL)
         scroll_y = Scrollbar(frame_tabla, orient=VERTICAL)
@@ -657,7 +657,7 @@ class Roombooking:
     def mostrar_plano_habitaciones(self):
         ventana = Toplevel(self.root)
         ventana.title("Plano de Habitaciones")
-        ventana.geometry("750x500")  # un poco más grande
+        ventana.geometry("750x550")  # un poco más grande
 
         try:
             entrada = self.datos["Fecha de Entrada"].get_date().strftime("%Y-%m-%d")
