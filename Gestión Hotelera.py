@@ -7,8 +7,53 @@ from PIL import Image, ImageTk
 import os
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
+ruta_fondo_inicio = os.path.join(BASE_DIR, "imagenes", "fondo_inicio.png")
 ruta_fondo = os.path.join(BASE_DIR, "imagenes", "fondo.png")
 ruta_logo = os.path.join(BASE_DIR, "imagenes", "Logo.png")
+ruta_logo2 = os.path.join(BASE_DIR, "imagenes", "logo 2.png")
+ruta_logo3 = os.path.join(BASE_DIR, "imagenes", "logo 3.png")
+
+class VentanaInicio:
+    def __init__(self, master, continuar_callback):
+        self.master = master
+        self.master.title("Gestión Hotelera - Inicio")
+        self.master.geometry("800x500")
+        self.master.resizable(False, False)
+
+        # Fondo con imagen
+        fondo_img = Image.open(ruta_fondo_inicio)
+        fondo_img = fondo_img.resize((800, 500), Image.Resampling.LANCZOS)
+        self.bg_photo = ImageTk.PhotoImage(fondo_img)
+        fondo = Label(self.master, image=self.bg_photo)
+        fondo.place(x=0, y=0, relwidth=1, relheight=1)
+
+        # Cuadro semi-transparente centrado
+        contenedor = Frame(self.master, bg="white", bd=0)
+        contenedor.place(relx=0.5, rely=0.5, anchor="center", width=360, height=230)
+
+        contenedor.config(highlightbackground="gray", highlightthickness=1)
+
+        Label(contenedor, text="Gestión Hotelera", font=("Helvetica", 24, "bold"),
+              bg="white", fg="#222", justify="center").pack(pady=(20, 10))
+
+        # Botón Iniciar
+        Button(contenedor, text="Iniciar", font=("Helvetica", 14, "bold"), bg="#4CAF50",
+               fg="white", width=20, height=2, relief="flat", command=self.iniciar).pack(pady=(0, 10))
+
+        # Botón Salir
+        Button(contenedor, text="Salir", font=("Helvetica", 14, "bold"), bg="#f44336",
+               fg="white", width=20, height=2, relief="flat", command=self.salir).pack()
+
+        self.continuar_callback = continuar_callback
+
+    def iniciar(self):
+        self.master.destroy()
+        self.continuar_callback()
+
+    def salir(self):
+        if messagebox.askokcancel("Salir", "¿Seguro que quieres salir?"):
+            self.master.destroy()
+
 class HotelManagementSystem:
     def __init__(self, root):
         self.root = root
@@ -61,12 +106,15 @@ class HotelManagementSystem:
         self.right_frame.place(x=225, y=0, width=1310, height=590)
 
         # Logos inferiores
-        img_logo = Image.open(ruta_logo)
-        for y in [225, 420]:
-            img = img_logo.resize((230, 210 if y == 225 else 190), Image.Resampling.LANCZOS)
-            photo = ImageTk.PhotoImage(img)
-            Label(main_frame, image=photo, bd=4, relief=RIDGE).place(x=0, y=y, width=230, height=210 if y == 225 else 190)
-            setattr(self, f"photoimg_y{y}", photo)
+        img_logo2 = Image.open(ruta_logo2)
+        img_logo2 = img_logo2.resize((230, 210), Image.Resampling.LANCZOS)
+        self.photoimg_logo2 = ImageTk.PhotoImage(img_logo2)
+        Label(main_frame, image=self.photoimg_logo2, bd=4, relief=RIDGE).place(x=0, y=225, width=230, height=210)
+
+        img_logo3 = Image.open(ruta_logo3)
+        img_logo3 = img_logo3.resize((230, 190), Image.Resampling.LANCZOS)
+        self.photoimg_logo3 = ImageTk.PhotoImage(img_logo3)
+        Label(main_frame, image=self.photoimg_logo3, bd=4, relief=RIDGE).place(x=0, y=420, width=230, height=190)
 
     def cust_details(self):
         for widget in self.right_frame.winfo_children():
@@ -1069,14 +1117,115 @@ class Incidencias:
         self.estado_var.set("Resuelta")
         messagebox.showinfo("Actualizado", "✅ Incidencia marcada como resuelta.")
 
+import threading
+import time
+import random
+from datetime import datetime, timedelta
+from faker import Faker
 
-#ejecuta la automatizacion
-from tkinter import Button
-from automatizador import iniciar_automatizacion
+class Simulador:
+    def __init__(self, app):
+        self.app = app
+        self.faker = Faker("es_ES")
+        self.contador = 1
+
+    def generar_dni(self):
+        letras = "TRWAGMYFPDXBNJZSQVHLCKE"
+        num = random.randint(10000000, 99999999)
+        letra = letras[num % 23]
+        return f"{num}{letra}"
+
+    def generar_pasaporte_o_nie(self):
+        return f"{self.faker.random_uppercase_letter()}{self.faker.random_number(digits=7)}{self.faker.random_uppercase_letter()}"
+
+    def iniciar(self):
+        def insertar_datos():
+            inicio = time.time()
+            duracion = 20 * 60  # 20 minutos
+            intervalo = 15  # segundos
+
+            while time.time() - inicio < duracion:
+                print(f"[{self.contador}] Insertando cliente y reserva...")
+
+                # CLIENTE
+                self.app.cust_details()
+                cliente = self.app.app
+                campos = cliente.campos
+
+                nombre = self.faker.name()
+                movil = self.faker.msisdn()[0:9]
+                email = self.faker.email()
+                direccion = self.faker.street_address()
+                nacionalidad = self.faker.current_country()
+                cp = self.faker.postcode()
+                doc_tipo = random.choice(["DNI", "Pasaporte", "NIE"])
+                num_doc = self.generar_dni() if doc_tipo == "DNI" else self.generar_pasaporte_o_nie()
+                ref = f"AUTO{self.contador:04d}"
+
+                campos["Ref cliente"].delete(0, "end")
+                campos["Ref cliente"].insert(0, ref)
+                campos["Nombre cliente"].delete(0, "end")
+                campos["Nombre cliente"].insert(0, nombre)
+                campos["Género"].set(random.choice(["Masculino", "Femenino", "Otro"]))
+                campos["Código Postal"].delete(0, "end")
+                campos["Código Postal"].insert(0, cp)
+                campos["Móvil"].delete(0, "end")
+                campos["Móvil"].insert(0, movil)
+                campos["Email"].delete(0, "end")
+                campos["Email"].insert(0, email)
+                campos["Nacionalidad"].delete(0, "end")
+                campos["Nacionalidad"].insert(0, nacionalidad)
+                campos["Tipo de Documento"].set(doc_tipo)
+                campos["Número de Documento"].delete(0, "end")
+                campos["Número de Documento"].insert(0, num_doc)
+                campos["Dirección"].delete(0, "end")
+                campos["Dirección"].insert(0, direccion)
+
+                cliente.insertar_cliente()
+
+                # RESERVA
+                self.app.room_details()
+                reserva = self.app.app
+                datos = reserva.datos
+
+                datos["Contacto del Cliente"].delete(0, "end")
+                datos["Contacto del Cliente"].insert(0, movil)
+
+                personas = random.randint(1, 4)
+                datos["Nº de Personas"].delete(0, "end")
+                datos["Nº de Personas"].insert(0, str(personas))
+
+                entrada = datetime.today() + timedelta(days=random.randint(0, 3))
+                salida = entrada + timedelta(days=random.randint(1, 5))
+                datos["Fecha de Entrada"].set_date(entrada)
+                datos["Fecha de Salida"].set_date(salida)
+
+                tipo = random.choice(["Estándar", "Familiar", "Suite"])
+                habitacion_id = f"{random.randint(101, 310)} {tipo}"
+                datos["Habitación"].set(habitacion_id)
+
+                datos["Comida"].set(random.choice(["Desayuno", "Media pensión", "Pensión completa"]))
+
+                reserva.calcular_dias()
+                reserva.insertar_reserva()
+
+                self.contador += 1
+                time.sleep(intervalo)
+
+            print("✅ Finalizado: Clientes y reservas")
+
+        threading.Thread(target=insertar_datos, daemon=True).start()
+
+
 # Ejecución principal
 if __name__ == "__main__":
-    root = Tk()
-    app = HotelManagementSystem(root)
-    Button(root, text="Iniciar Test Aleatorio", font=("Arial", 12), bg="black", fg="gold",
-           command=lambda: iniciar_automatizacion(app)).place(x=1300, y=10)
-    root.mainloop()
+    def lanzar_app_principal():
+        root_app = Tk()
+        app = HotelManagementSystem(root_app)
+        Button(root_app, text="Iniciar Test Aleatorio", font=("Arial", 12), bg="black", fg="gold",
+               command=lambda: Simulador(app).iniciar()).place(x=1100, y=10)
+        root_app.mainloop()
+
+    root_inicio = Tk()
+    app_inicio = VentanaInicio(root_inicio, continuar_callback=lanzar_app_principal)
+    root_inicio.mainloop()
