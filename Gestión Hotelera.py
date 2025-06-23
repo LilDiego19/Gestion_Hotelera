@@ -235,7 +235,7 @@ class Cust_Win:
         self.cursor = self.conn.cursor()
 
     def crear_tabla(self):
-        # self.cursor.execute("DROP TABLE IF EXISTS clientes")  #  Fuerza eliminar tabla antigua
+        #self.cursor.execute("DROP TABLE IF EXISTS clientes")  #  Fuerza eliminar tabla antigua
         self.cursor.execute("""
             CREATE TABLE IF NOT EXISTS clientes (
                 ref TEXT PRIMARY KEY,
@@ -489,7 +489,7 @@ class Roombooking:
             "Nº de Personas",
             "Fecha de Entrada",
             "Fecha de Salida",
-            "Habitación",  # será usada como "habitacion" en la BD
+            "Habitación",
             "Comida",
             "Nº de Días",
             "Impuesto Pagado",
@@ -498,32 +498,63 @@ class Roombooking:
         ]
 
         try:
-            datos = [self.datos[campo].get() for campo in orden_campos]
-            habitacion = self.datos["Habitación"].get()
-            if not habitacion or not habitacion.split()[0].isdigit():
-                messagebox.showerror("Error", "Debes seleccionar una habitación válida del plano (ej: 101 Estándar).")
+            contacto = self.datos["Contacto del Cliente"].get().strip()
+            if not contacto:
+                messagebox.showerror("Error", "El contacto del cliente es obligatorio.")
                 return
 
-        except KeyError as e:
-            messagebox.showerror("Error", f"Falta el campo: {e}")
-            return
+            habitacion_id = self.datos["Habitación"].get().strip()
+            if not habitacion_id or not habitacion_id.split()[0].isdigit():
+                messagebox.showerror("Error", "Selecciona una habitación válida desde el plano.")
+                return
 
-        if not datos[0]:
-            messagebox.showerror("Error", "El contacto del cliente es obligatorio.")
-            return
+            # ✅ Formato de fechas correcto para SQLite
+            entrada_date = self.datos["Fecha de Entrada"].get_date()
+            salida_date = self.datos["Fecha de Salida"].get_date()
+            entrada = entrada_date.strftime("%Y-%m-%d")
+            salida = salida_date.strftime("%Y-%m-%d")
 
-        try:
+            # ✅ Verificar solapamientos
             self.cursor.execute("""
-                INSERT INTO reservas 
+                SELECT * FROM reservas
+                WHERE habitacion = ?
+                AND (
+                    date(checkin) <= ? AND date(checkout) >= ?
+                )
+            """, (habitacion_id, salida, entrada))
+
+            if self.cursor.fetchone():
+                messagebox.showerror("Error", f"❌ La habitación '{habitacion_id}' ya está reservada entre esas fechas.")
+                return
+
+            # Obtener el resto de campos
+            datos = [
+                contacto,
+                self.datos["Nº de Personas"].get(),
+                entrada,  # usamos fecha en formato YYYY-MM-DD
+                salida,
+                habitacion_id,
+                self.datos["Comida"].get(),
+                self.datos["Nº de Días"].get(),
+                self.datos["Impuesto Pagado"].get(),
+                self.datos["Subtotal"].get(),
+                self.datos["Costo Total"].get()
+            ]
+
+            self.cursor.execute("""
+                INSERT INTO reservas
                 (contacto, personas, checkin, checkout, habitacion, comida, dias, impuesto, subtotal, total)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, datos)
 
             self.conn.commit()
-            messagebox.showinfo("Éxito", "Reserva añadida correctamente.")
             self.mostrar_reservas()
+            messagebox.showinfo("Éxito", "✅ Reserva guardada correctamente.")
+
         except sqlite3.IntegrityError:
-            messagebox.showwarning("Aviso", "Ya existe una reserva para este contacto.")
+            messagebox.showwarning("Duplicado", "Ya existe una reserva con ese contacto.")
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudo insertar la reserva:\n{e}")
 
     def mostrar_reservas(self):
         self.cursor.execute("SELECT * FROM reservas")
@@ -805,10 +836,10 @@ class Detalles:
         Label(self.root, text="New Rooms Add", font=("times new roman", 20, "bold"), fg="green", bg="white").place(x=5, y=0)
 
         # Imagen superior
-        img = Image.open(r"/Users/danielgallegolazaro/Downloads/fondo.png")  # Cambia esta ruta
-        img = img.resize((500, 120), Image.LANCZOS)
-        self.photoimg = ImageTk.PhotoImage(img)
-        Label(self.root, image=self.photoimg, bd=2, relief=RIDGE).place(x=5, y=30, width=500, height=120)
+        img1 = Image.open(ruta_fondo)
+        img1 = img1.resize((1550, 140), Image.Resampling.LANCZOS)
+        self.photoimg1 = ImageTk.PhotoImage(img1)
+        Label(self.root, image=self.photoimg1, bd=4, relief=RIDGE).place(x=0, y=0, width=1550, height=140)
 
         # Frame izquierdo (formulario)
         frame_form = LabelFrame(self.root, text="Room Information", font=("arial", 12, "bold"), bg="white", bd=2, relief=RIDGE)
@@ -1039,8 +1070,13 @@ class Incidencias:
         messagebox.showinfo("Actualizado", "✅ Incidencia marcada como resuelta.")
 
 
+#ejecuta la automatizacion
+from tkinter import Button
+from automatizador import iniciar_automatizacion
 # Ejecución principal
 if __name__ == "__main__":
     root = Tk()
-    obj = HotelManagementSystem(root)
+    app = HotelManagementSystem(root)
+    Button(root, text="Iniciar Test Aleatorio", font=("Arial", 12), bg="black", fg="gold",
+           command=lambda: iniciar_automatizacion(app)).place(x=1300, y=10)
     root.mainloop()
