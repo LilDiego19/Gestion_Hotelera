@@ -267,7 +267,14 @@ class Cust_Win:
         num_doc = datos[9]
 
         import re
-        if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+        # Elimina espacios en blanco
+
+        email = datos[6].strip()
+
+        # Expresión regular mejorada
+        patron_email = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
+
+        if not re.match(patron_email, email):
             messagebox.showerror("Error", "Correo electrónico no válido")
             return
 
@@ -287,7 +294,7 @@ class Cust_Win:
             messagebox.showerror("Error", "Referencia obligatoria")
             return
         try:
-            self.cursor.execute("INSERT INTO clientes VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", datos)
+            self.cursor.execute("INSERT INTO clientes VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", datos)
             self.conn.commit()
             messagebox.showinfo("Éxito", "Cliente añadido correctamente")
             self.mostrar_todos()

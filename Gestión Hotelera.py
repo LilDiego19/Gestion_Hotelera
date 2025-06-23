@@ -103,10 +103,9 @@ class Cust_Win:
         labelframeleft.place(x=5, y=60, width=580, height=500)
 
         fields = [
-            ("Customer Ref", ttk.Entry),
-            ("Customer Name", ttk.Entry),
-            ("Mother Name", ttk.Entry),
-            ("Gender", ttk.Combobox),
+            ("Ref cliente", ttk.Entry),
+            ("Nombre cliente", ttk.Entry),
+            ("Género", ttk.Combobox),
             ("Código Postal", ttk.Entry),
             ("Móvil", ttk.Entry),
             ("Email", ttk.Entry),
@@ -121,7 +120,7 @@ class Cust_Win:
             Label(labelframeleft, text=label_text, font=("Arial", 12, "bold"), padx=2, pady=6).grid(row=idx, column=0, sticky="w")
             if widget_type == ttk.Combobox:
                 widget = widget_type(labelframeleft, font=("Arial", 13, "bold"), width=27, state="readonly")
-                widget["values"] = ("DNI", "Pasaporte", "NIE") if "Documento" in label_text else ("Male", "Female", "Other")
+                widget["values"] = ("DNI", "Pasaporte", "NIE") if "Documento" in label_text else ("Masculino", "Femenino", "Otro")
                 widget.current(0)
             else:
                 widget = widget_type(labelframeleft, font=("Arial", 13, "bold"), width=29)
@@ -151,7 +150,7 @@ class Cust_Win:
         self.combo_Search.current(0)
         self.combo_Search.grid(row=0, column=1, padx=2)
 
-        self.txtSearch = ttk.Entry(Table_Frame, font=("arial", 13, "bold"), width=24)
+        self.txtSearch = ttk.Entry(Table_Frame, font=("arial", 13, "bold"), width=20)
         self.txtSearch.grid(row=0, column=2, padx=2)
 
         btnSearch = Button(Table_Frame, text="Buscar", font=("arial", 11, "bold"), bg="black", fg="gold", width=8, command=self.buscar_cliente)
@@ -168,7 +167,7 @@ class Cust_Win:
 
         self.Cust_Details_Table = ttk.Treeview(
             details_table,
-            columns=("ref", "nombre", "madre", "genero", "cod_postal", "movil", "email", "nacionalidad", "tipo_doc", "num_doc", "direccion"),
+            columns=("ref", "nombre", "genero", "cod_postal", "movil", "email", "nacionalidad", "tipo_doc", "num_doc", "direccion"),
             xscrollcommand=scroll_x.set,
             yscrollcommand=scroll_y.set
         )
@@ -184,7 +183,6 @@ class Cust_Win:
         headers = {
             "ref": "Referencia",
             "nombre": "Nombre",
-            "madre": "Nombre madre",
             "genero": "Género",
             "cod_postal": "Código postal",
             "movil": "Móvil",
@@ -237,11 +235,11 @@ class Cust_Win:
         self.cursor = self.conn.cursor()
 
     def crear_tabla(self):
+        self.cursor.execute("DROP TABLE IF EXISTS clientes")  # 💥 Fuerza eliminar tabla antigua
         self.cursor.execute("""
-            CREATE TABLE IF NOT EXISTS clientes (
+            CREATE TABLE clientes (
                 ref TEXT PRIMARY KEY,
                 nombre TEXT,
-                madre TEXT,
                 genero TEXT,
                 cod_postal TEXT,
                 movil TEXT,
@@ -254,18 +252,23 @@ class Cust_Win:
         """)
         self.conn.commit()
 
-
-
     def insertar_cliente(self):
         datos = [campo.get() for campo in self.campos.values()]
 
-        email = datos[6]
-        movil = datos[5]
+        email = datos[5]
+        movil = datos[4]
         tipo_doc = self.campos["Tipo de Documento"].get()
-        num_doc = datos[9]
+        num_doc = datos[8]
 
         import re
-        if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+        # Elimina espacios en blanco
+
+        email = datos[5].strip()
+
+        # Expresión regular mejorada
+        patron_email = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
+
+        if not re.match(patron_email, email):
             messagebox.showerror("Error", "Correo electrónico no válido")
             return
 
@@ -285,7 +288,8 @@ class Cust_Win:
             messagebox.showerror("Error", "Referencia obligatoria")
             return
         try:
-            self.cursor.execute("INSERT INTO clientes VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", datos)
+            self.cursor.execute("INSERT INTO clientes VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", datos)
+
             self.conn.commit()
             messagebox.showinfo("Éxito", "Cliente añadido correctamente")
             self.mostrar_todos()
@@ -304,7 +308,7 @@ class Cust_Win:
         datos = [campo.get() for campo in self.campos.values()][1:] + [ref]
         self.cursor.execute("""
             UPDATE clientes SET
-                nombre=?, madre=?, genero=?, cod_postal=?, movil=?, email=?, nacionalidad=?, tipo_doc=?, num_doc=?, direccion=?
+                nombre=?, genero=?, cod_postal=?, movil=?, email=?, nacionalidad=?, tipo_doc=?, num_doc=?, direccion=?
             WHERE ref=?
         """, datos)
         self.conn.commit()
