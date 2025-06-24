@@ -759,7 +759,6 @@ class Roombooking:
             ventana.destroy()
             return
 
-        # Canvas + Scrollbar
         frame_canvas = Frame(ventana)
         frame_canvas.pack(fill=BOTH, expand=1)
 
@@ -799,9 +798,7 @@ class Roombooking:
                 # Ajusta la posición de la cuadrícula según tus necesidades
                 btn.grid(row=planta * 5 + (i // 5) + 1, column=i % 5 + 1, padx=5, pady=5)
 
-        # Si tienes muchas plantas, puedes ajustar el número de filas
 
-        # Para que el canvas coja el foco y funcione el scroll con la rueda del ratón:
         def _on_mousewheel(event):
             canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
 
@@ -1199,6 +1196,20 @@ class Simulador:
     def generar_pasaporte_o_nie(self):
         return f"{self.faker.random_uppercase_letter()}{self.faker.random_number(digits=7)}{self.faker.random_uppercase_letter()}"
 
+    def generar_habitacion_valida(self):
+        planta = random.randint(1, 3)
+        posicion = random.randint(1, 10)  # 1–10
+        numero = planta * 100 + posicion
+
+        if posicion <= 5:
+            tipo = "Estándar"
+        elif posicion <= 9:
+            tipo = "Familiar"
+        else:
+            tipo = "Suite"
+
+        return f"{numero} {tipo}"
+
     def iniciar(self):
         def insertar_datos():
             inicio = time.time()
@@ -1261,8 +1272,7 @@ class Simulador:
                 datos["Fecha de Entrada"].set_date(entrada)
                 datos["Fecha de Salida"].set_date(salida)
 
-                tipo = random.choice(["Estándar", "Familiar", "Suite"])
-                habitacion_id = f"{random.randint(101, 310)} {tipo}"
+                habitacion_id = self.generar_habitacion_valida()
                 datos["Habitación"].set(habitacion_id)
 
                 datos["Comida"].set(random.choice(["Desayuno", "Media pensión", "Pensión completa"]))
@@ -1276,6 +1286,7 @@ class Simulador:
             print("✅ Finalizado: Clientes y reservas")
 
         threading.Thread(target=insertar_datos, daemon=True).start()
+
 
 
 # Ejecución principal
