@@ -6,6 +6,8 @@ from datetime import datetime
 from tkinter import *
 from tkinter import ttk, messagebox
 from PIL import Image, ImageTk
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
 import os
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -397,7 +399,7 @@ class Roombooking:
 
         labelframeleft = LabelFrame(self.root, bd=2, relief=RIDGE, text="Datos de la Reserva",
                                     font=("arial", 12, "bold"), padx=2)
-        labelframeleft.place(x=5, y=50, width=480, height=520)
+        labelframeleft.place(x=5, y=50, width=535, height=520)
 
         # Campos
         self.datos = {}
@@ -457,13 +459,18 @@ class Roombooking:
             ("Eliminar", self.eliminar_reserva),
             ("Reset", self.reset_campos)
         ]
+
+        # Boton FACTURA
+        Button(labelframeleft, text="FACTURA", font=("arial", 11, "bold"), bg="darkgreen", fg="white", width=10,
+               command=self.generar_factura_pdf).place(x=410,y = 460)
+
         for i, (texto, cmd) in enumerate(botones):
             Button(labelframeleft, text=texto, font=("arial", 11, "bold"), bg="black", fg="gold", width=10,
                    command=cmd).place(x=10 + i * 100, y=460)
 
         # Tabla a la derecha
         frame_tabla = Frame(self.root, bd=2, relief=RIDGE)
-        frame_tabla.place(x=500, y=150, width=750, height=405)
+        frame_tabla.place(x=560, y=150, width=720, height=405)
 
         scroll_x = Scrollbar(frame_tabla, orient=HORIZONTAL)
         scroll_y = Scrollbar(frame_tabla, orient=VERTICAL)
@@ -497,10 +504,10 @@ class Roombooking:
 
 
     def crear_tabla(self):
-        self.cursor.execute("DROP TABLE IF EXISTS reservas")  # <-- Elimina la tabla si existe
+        #self.cursor.execute("DROP TABLE IF EXISTS reservas")  # <-- Elimina la tabla si existe
 
         self.cursor.execute("""
-            CREATE TABLE reservas (
+            CREATE TABLE IF NOT EXISTS reservas (
                 contacto TEXT PRIMARY KEY,
                 personas TEXT,
                 checkin TEXT,
@@ -854,7 +861,7 @@ class Roombooking:
             # ✅ Extrae solo el tipo: "Estándar" desde "101 Estándar"
             tipo_habitacion = habitacion.split()[-1]
             precio_habitacion = precios_habitacion.get(tipo_habitacion, 0)
-            precio_comida = precios_comida.get(comida, 0)
+            precios_comida = precios_comida.get(comida, 0)
 
             subtotal = (precio_habitacion * dias) + (precios_comida * personas * dias)
 
@@ -872,6 +879,58 @@ class Roombooking:
 
         except Exception as e:
             print("Error al calcular precio total:", e)
+    from reportlab.lib.pagesizes import A4
+    from reportlab.pdfgen import canvas
+    import os
+
+    def generar_factura_pdf(self):
+        contacto = self.datos["Contacto del Cliente"].get()
+
+        if not contacto:
+            messagebox.showwarning("Advertencia", "Debes introducir el contacto del cliente.")
+            return
+
+        self.cursor.execute("SELECT * FROM reservas WHERE contacto=?", (contacto,))
+        reserva = self.cursor.fetchone()
+
+        if not reserva:
+            messagebox.showerror("Error", "No se encontró ninguna reserva con ese contacto.")
+            return
+
+        # Desempaquetar los datos
+        contacto, personas, checkin, checkout, habitacion, comida, dias, impuesto, subtotal, total = reserva
+
+        nombre_archivo = f"factura_{contacto}.pdf"
+        c = canvas.Canvas(nombre_archivo, pagesize=A4)
+        width, height = A4
+
+        c.setTitle("Factura de Reserva")
+        c.setFont("Helvetica-Bold", 16)
+        c.drawString(50, height - 50, "FACTURA DE RESERVA - HOTEL")
+
+        c.setFont("Helvetica", 12)
+        lineas = [
+            f"Contacto del Cliente: {contacto}",
+            f"Nº de Personas: {personas}",
+            f"Fecha de Entrada: {checkin}",
+            f"Fecha de Salida: {checkout}",
+            f"Habitación: {habitacion}",
+            f"Régimen de Comida: {comida}",
+            f"Nº de Días: {dias}",
+            f"Subtotal: {subtotal} €",
+            f"Impuesto: {impuesto} €",
+            f"Total: {total} €"
+        ]
+
+        y = height - 100
+        for linea in lineas:
+            c.drawString(50, y, linea)
+            y -= 25
+
+        c.drawString(50, y - 20, "Gracias por su reserva. ¡Le esperamos!")
+
+        c.save()
+        messagebox.showinfo("Factura generada", f"Factura guardada como '{nombre_archivo}'")
 
 
 class Detalles:
