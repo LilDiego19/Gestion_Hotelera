@@ -1,4 +1,6 @@
 import sqlite3
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
 from tkcalendar import DateEntry
 from datetime import datetime
 from tkinter import *
